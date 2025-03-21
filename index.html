@@ -21,6 +21,13 @@
       height: auto;
       margin-top: 20px;
     }
+
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -36,20 +43,24 @@
   <input type="file" id="fontInput" accept=".ttf,.otf" />
   <br />
 
+  <!-- Extract Text Button -->
+  <button id="extractTextButton">Extract Text</button>
+
   <!-- Preview and Output -->
   <img id="preview" src="#" alt="Image Preview" style="display:none;" />
   <div id="output">Extracted text will appear here.</div>
 
-  <!-- Include Tesseract.js and Jimp -->
+  <!-- Include Tesseract.js -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jimp@0.16.2/browser/lib/jimp.min.js"></script>
   <script>
     const imageInput = document.getElementById('imageInput');
     const fontInput = document.getElementById('fontInput');
+    const extractTextButton = document.getElementById('extractTextButton');
     const preview = document.getElementById('preview');
     const output = document.getElementById('output');
 
     let customFontLoaded = false;
+    let imageDataUrl = null; // Store the uploaded image data URL
 
     // Load custom font
     fontInput.addEventListener('change', (event) => {
@@ -71,7 +82,7 @@
       }
     });
 
-    // Process image and extract text
+    // Handle image upload
     imageInput.addEventListener('change', (event) => {
       const file = event.target.files[0];
       if (file) {
@@ -79,38 +90,34 @@
         reader.onload = (e) => {
           preview.src = e.target.result;
           preview.style.display = 'block';
-
-          // Preprocess image using Jimp
-          Jimp.read(e.target.result)
-            .then((image) => {
-              return image
-                .greyscale() // Convert to grayscale
-                .contrast(0.5) // Adjust contrast
-                .getBase64Async(Jimp.MIME_PNG); // Convert back to base64
-            })
-            .then((processedImage) => {
-              // Perform OCR on the processed image
-              Tesseract.recognize(
-                processedImage,
-                'eng', // Language (English)
-                {
-                  logger: (m) => console.log(m), // Log progress
-                }
-              ).then(({ data: { text } }) => {
-                output.textContent = text; // Display extracted text
-                if (customFontLoaded) {
-                  output.style.fontFamily = 'CustomFont'; // Apply custom font if loaded
-                } else {
-                  output.style.fontFamily = 'Arial, sans-serif'; // Default to Arial
-                }
-              });
-            })
-            .catch((error) => {
-              console.error('Error processing image:', error);
-            });
+          imageDataUrl = e.target.result; // Save the image data URL
         };
         reader.readAsDataURL(file);
       }
+    });
+
+    // Extract text from the image
+    extractTextButton.addEventListener('click', () => {
+      if (!imageDataUrl) {
+        alert('Please upload an image first.');
+        return;
+      }
+
+      // Perform OCR on the image
+      Tesseract.recognize(
+        imageDataUrl,
+        'eng', // Language (English)
+        {
+          logger: (m) => console.log(m), // Log progress
+        }
+      ).then(({ data: { text } }) => {
+        output.textContent = text; // Display extracted text
+        if (customFontLoaded) {
+          output.style.fontFamily = 'CustomFont'; // Apply custom font if loaded
+        } else {
+          output.style.fontFamily = 'Arial, sans-serif'; // Default to Arial
+        }
+      });
     });
   </script>
 </body>
