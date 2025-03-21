@@ -12,7 +12,6 @@
     }
 
     #output {
-      font-family: Arial, sans-serif; /* Default to Arial */
       font-size: 24px;
       margin-top: 20px;
     }
@@ -50,6 +49,8 @@
     const preview = document.getElementById('preview');
     const output = document.getElementById('output');
 
+    let customFontLoaded = false;
+
     // Load custom font
     fontInput.addEventListener('change', (event) => {
       const file = event.target.files[0];
@@ -59,6 +60,7 @@
           const font = new FontFace('CustomFont', `url(${e.target.result})`);
           font.load().then((loadedFont) => {
             document.fonts.add(loadedFont);
+            customFontLoaded = true;
             output.style.fontFamily = 'CustomFont'; // Apply custom font
             console.log('Custom font loaded successfully!');
           }).catch((error) => {
@@ -96,6 +98,11 @@
                 }
               ).then(({ data: { text } }) => {
                 output.textContent = text; // Display extracted text
+                if (customFontLoaded) {
+                  output.style.fontFamily = 'CustomFont'; // Apply custom font if loaded
+                } else {
+                  output.style.fontFamily = 'Arial, sans-serif'; // Default to Arial
+                }
               });
             })
             .catch((error) => {
