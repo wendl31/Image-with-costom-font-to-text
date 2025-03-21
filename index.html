@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image to Text with Custom Font</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+
+    #output {
+      font-family: Arial, sans-serif; /* Default to Arial */
+      font-size: 24px;
+      margin-top: 20px;
+    }
+
+    #preview {
+      max-width: 100%;
+      height: auto;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Image to Text with Custom Font</h1>
+  
+  <!-- Image Upload -->
+  <h3>Upload Image</h3>
+  <input type="file" id="imageInput" accept="image/*" />
+  <br />
+
+  <!-- Font Upload -->
+  <h3>Upload Custom Font</h3>
+  <input type="file" id="fontInput" accept=".ttf,.otf" />
+  <br />
+
+  <!-- Preview and Output -->
+  <img id="preview" src="#" alt="Image Preview" style="display:none;" />
+  <div id="output">Extracted text will appear here.</div>
+
+  <!-- Include Tesseract.js and Jimp -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jimp@0.16.2/browser/lib/jimp.min.js"></script>
+  <script>
+    const imageInput = document.getElementById('imageInput');
+    const fontInput = document.getElementById('fontInput');
+    const preview = document.getElementById('preview');
+    const output = document.getElementById('output');
+
+    // Load custom font
+    fontInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const font = new FontFace('CustomFont', `url(${e.target.result})`);
+          font.load().then((loadedFont) => {
+            document.fonts.add(loadedFont);
+            output.style.fontFamily = 'CustomFont'; // Apply custom font
+            console.log('Custom font loaded successfully!');
+          }).catch((error) => {
+            console.error('Error loading font:', error);
+          });
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Process image and extract text
+    imageInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          preview.src = e.target.result;
+          preview.style.display = 'block';
+
+          // Preprocess image using Jimp
+          Jimp.read(e.target.result)
+            .then((image) => {
+              return image
+                .greyscale() // Convert to grayscale
+                .contrast(0.5) // Adjust contrast
+                .getBase64Async(Jimp.MIME_PNG); // Convert back to base64
+            })
+            .then((processedImage) => {
+              // Perform OCR on the processed image
+              Tesseract.recognize(
+                processedImage,
+                'eng', // Language (English)
+                {
+                  logger: (m) => console.log(m), // Log progress
+                }
+              ).then(({ data: { text } }) => {
+                output.textContent = text; // Display extracted text
+              });
+            })
+            .catch((error) => {
+              console.error('Error processing image:', error);
+            });
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  </script>
+</body>
+</html>
